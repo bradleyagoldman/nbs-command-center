@@ -448,15 +448,33 @@ ICON_FUNCS = {
     10: icon_mystical_shell,
 }
 
+_INGREDIENT_IMG_BASE = (
+    "https://raw.githubusercontent.com/gianemi2/"
+    "pokemon-quest-recipes-maker/master/assets/ingredient-image"
+)
+
 def make_all_icons():
-    for ing_id, func in ICON_FUNCS.items():
-        _, slug = INGREDIENTS[ing_id]
+    """Download real game ingredient sprites; fall back to PIL drawing."""
+    ready = 0
+    for ing_id, (label, slug) in INGREDIENTS.items():
         dest = ASSETS_DIR / "ingredients" / f"{slug}.png"
         if dest.exists() and dest.stat().st_size > 500:
+            ready += 1
             continue
-        img = func()
-        img.save(dest, "PNG")
-    print(f"  {len(ICON_FUNCS)} ingredient icons generated")
+        url = f"{_INGREDIENT_IMG_BASE}/{slug}.png"
+        try:
+            time.sleep(0.3)
+            r = session.get(url, timeout=20)
+            if r.status_code == 200 and len(r.content) > 500:
+                dest.write_bytes(r.content)
+                ready += 1
+                continue
+        except Exception:
+            pass
+        # Fallback: PIL-drawn icon
+        ICON_FUNCS[ing_id]().save(dest, "PNG")
+        ready += 1
+    print(f"  {ready} ingredient icons ready")
 
 # ---------------------------------------------------------------------------
 # Data parsing
