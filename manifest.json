@@ -1,1 +1,18 @@
-placeholder
+{
+  "name": "Pokemon Quest Cooking Book",
+  "short_name": "Poke Cooking",
+  "description": "Kid-friendly Pokemon Quest recipe guide",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f0f2ff",
+  "theme_color": "#FF6B6B",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

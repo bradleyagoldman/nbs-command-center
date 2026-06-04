@@ -1,1 +1,409 @@
-placeholder
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Poke Cooking">
+  <meta name="theme-color" content="#FF6B6B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <title>Pokemon Quest Cooking Book</title>
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+  background: #f0f2ff;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* ---- TOP BAR ---- */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #FF6B6B;
+  padding: 14px 16px 14px 16px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.20);
+}
+
+#back-btn {
+  background: rgba(255,255,255,0.28);
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
+  cursor: pointer;
+  color: white;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  display: none;
+}
+#back-btn.show { display: flex; }
+
+.top-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: white;
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- TOC ---- */
+#toc-view { padding: 16px 12px 30px; }
+
+.toc-header {
+  text-align: center;
+  padding: 20px 16px 16px;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FFB347 100%);
+  border-radius: 18px;
+  margin-bottom: 16px;
+  color: white;
+}
+.toc-header h2 { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+.toc-header p { font-size: 15px; opacity: 0.9; font-weight: 600; }
+
+.poke-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.poke-thumb {
+  background: white;
+  border-radius: 18px;
+  padding: 14px 8px 10px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.12s, box-shadow 0.12s;
+  -webkit-user-select: none;
+}
+.poke-thumb:active { transform: scale(0.93); box-shadow: 0 1px 4px rgba(0,0,0,0.10); }
+
+.thumb-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.thumb-circle img {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+}
+
+.thumb-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #333;
+  line-height: 1.2;
+  max-width: 110px;
+}
+.thumb-num {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+/* ---- DETAIL VIEW ---- */
+#detail-view { display: none; padding-bottom: 30px; }
+
+.card-banner {
+  padding: 24px 20px 0;
+  text-align: center;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  overflow: hidden;
+}
+.banner-circle1 {
+  position: absolute; top: -30px; right: -20px;
+  width: 180px; height: 180px;
+  background: rgba(255,255,255,0.10); border-radius: 50%;
+}
+.banner-circle2 {
+  position: absolute; bottom: 30px; left: -20px;
+  width: 110px; height: 110px;
+  background: rgba(255,255,255,0.08); border-radius: 50%;
+}
+
+.poke-art {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.22));
+}
+.poke-title {
+  font-size: 34px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.20);
+  position: relative;
+  z-index: 1;
+  margin-bottom: 6px;
+  margin-top: 8px;
+}
+.recipe-pill {
+  background: rgba(0,0,0,0.22);
+  border-radius: 22px;
+  padding: 7px 20px;
+  color: white;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- RECIPE ROWS ---- */
+.recipe-section {
+  margin: 14px 14px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+}
+
+.row-label {
+  padding: 11px 16px;
+  font-size: 16px;
+  font-weight: 900;
+  color: white;
+}
+.row-label.rainbow { background: #6A1B9A; }
+.row-label.everyday { background: #BF360C; }
+.row-label.legendary-lbl { background: #B8860B; }
+
+.ing-row {
+  background: white;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 10px 6px 6px;
+  gap: 2px;
+}
+
+.ing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 2px 18px;
+  position: relative;
+  gap: 4px;
+}
+.ing-img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+.ing-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  line-height: 1.2;
+}
+.ing-badge {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: white;
+  font-size: 13px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legendary-note {
+  background: white;
+  padding: 24px 20px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.count-prompt {
+  text-align: center;
+  padding: 16px 12px 6px;
+  color: #555;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.card-footer {
+  text-align: center;
+  padding: 10px;
+  color: #ccc;
+  font-size: 12px;
+  margin-top: 6px;
+}
+</style>
+</head>
+<body>
+  <div class="top-bar">
+    <button id="back-btn" aria-label="Back">&#8592;</button>
+    <span class="top-title">Pokemon Cooking Book</span>
+  </div>
+
+  <div id="toc-view">
+    <div class="toc-header">
+      <h2>&#127859; Pokemon Cooking Book</h2>
+      <p>Tap a Pokemon to see their recipe!</p>
+    </div>
+    <div id="poke-grid" class="poke-grid"></div>
+  </div>
+
+  <div id="detail-view"></div>
+
+  <script>
+const POKEMON = [{"id": "p1", "dex": 1, "name": "Bulbasaur", "recipe": "Veggie Smoothie", "color": "#FF6B6B", "is_legendary": false, "row_a": [2, 4, 5, 9, 9], "row_b": [2, 2, 2, 4, 5]}, {"id": "p4", "dex": 4, "name": "Charmander", "recipe": "Hot Pot", "color": "#4ECDC4", "is_legendary": false, "row_a": [2, 4, 8, 9, 9], "row_b": [2, 2, 8, 8, 8]}, {"id": "p7", "dex": 7, "name": "Squirtle", "recipe": "Blue Soda", "color": "#45B7D1", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p10", "dex": 10, "name": "Caterpie", "recipe": "Honey Nectar", "color": "#96CEB4", "is_legendary": false, "row_a": [2, 3, 6, 9, 9], "row_b": [2, 3, 6, 6, 6]}, {"id": "p13", "dex": 13, "name": "Weedle", "recipe": "Honey Nectar", "color": "#F7DC6F", "is_legendary": false, "row_a": [2, 3, 6, 9, 9], "row_b": [2, 3, 6, 6, 6]}, {"id": "p16", "dex": 16, "name": "Pidgey", "recipe": "Light-as-Air Casserole", "color": "#DDA0DD", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 4, 4, 4]}, {"id": "p19", "dex": 19, "name": "Rattata", "recipe": "Blue Soda", "color": "#98D8C8", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p21", "dex": 21, "name": "Spearow", "recipe": "Light-as-Air Casserole", "color": "#FFB347", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 4, 4, 4]}, {"id": "p23", "dex": 23, "name": "Ekans", "recipe": "Blue Soda", "color": "#87CEEB", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p25", "dex": 25, "name": "Pikachu", "recipe": "Watt a Risotto", "color": "#F08080", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 6, 6, 6]}, {"id": "p27", "dex": 27, "name": "Sandshrew", "recipe": "Yellow Curry", "color": "#90EE90", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 6, 6, 6, 6]}, {"id": "p29", "dex": 29, "name": "Nidoran ♀", "recipe": "Sludge Soup", "color": "#FFD700", "is_legendary": false, "row_a": [1, 4, 8, 9, 9], "row_b": [1, 2, 8, 8, 8]}, {"id": "p32", "dex": 32, "name": "Nidoran ♂", "recipe": "Sludge Soup", "color": "#DA70D6", "is_legendary": false, "row_a": [1, 4, 8, 9, 9], "row_b": [1, 2, 8, 8, 8]}, {"id": "p35", "dex": 35, "name": "Clefairy", "recipe": "Gray Porridge", "color": "#20B2AA", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 8, 8, 8, 8]}, {"id": "p37", "dex": 37, "name": "Vulpix", "recipe": "Red Stew", "color": "#FF8C00", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p39", "dex": 39, "name": "Jigglypuff", "recipe": "Plain Crepe", "color": "#9B59B6", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p41", "dex": 41, "name": "Zubat", "recipe": "Light-as-Air Casserole", "color": "#3498DB", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 4, 4, 4]}, {"id": "p43", "dex": 43, "name": "Oddish", "recipe": "Sludge Soup", "color": "#E74C3C", "is_legendary": false, "row_a": [1, 4, 8, 9, 9], "row_b": [1, 2, 8, 8, 8]}, {"id": "p46", "dex": 46, "name": "Paras", "recipe": "Veggie Smoothie", "color": "#2ECC71", "is_legendary": false, "row_a": [2, 4, 5, 9, 9], "row_b": [2, 2, 2, 4, 5]}, {"id": "p48", "dex": 48, "name": "Venonat", "recipe": "Honey Nectar", "color": "#F39C12", "is_legendary": false, "row_a": [2, 3, 6, 9, 9], "row_b": [2, 3, 6, 6, 6]}, {"id": "p50", "dex": 50, "name": "Diglett", "recipe": "Mud Pie", "color": "#FF6B6B", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 2, 4, 4]}, {"id": "p52", "dex": 52, "name": "Meowth", "recipe": "Yellow Curry", "color": "#4ECDC4", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 6, 6, 6, 6]}, {"id": "p54", "dex": 54, "name": "Psyduck", "recipe": "Yellow Curry", "color": "#45B7D1", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 6, 6, 6, 6]}, {"id": "p56", "dex": 56, "name": "Mankey", "recipe": "Get Swole Syrup", "color": "#96CEB4", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p58", "dex": 58, "name": "Growlithe", "recipe": "Red Stew", "color": "#F7DC6F", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p60", "dex": 60, "name": "Poliwag", "recipe": "Blue Soda", "color": "#DDA0DD", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p63", "dex": 63, "name": "Abra", "recipe": "Yellow Curry", "color": "#98D8C8", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 6, 6, 6, 6]}, {"id": "p66", "dex": 66, "name": "Machop", "recipe": "Get Swole Syrup", "color": "#FFB347", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p69", "dex": 69, "name": "Bellsprout", "recipe": "Sludge Soup", "color": "#87CEEB", "is_legendary": false, "row_a": [1, 4, 8, 9, 9], "row_b": [1, 2, 8, 8, 8]}, {"id": "p72", "dex": 72, "name": "Tentacool", "recipe": "Sludge Soup", "color": "#F08080", "is_legendary": false, "row_a": [1, 4, 8, 9, 9], "row_b": [1, 2, 8, 8, 8]}, {"id": "p74", "dex": 74, "name": "Geodude", "recipe": "Gray Porridge", "color": "#90EE90", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 8, 8, 8, 8]}, {"id": "p77", "dex": 77, "name": "Ponyta", "recipe": "Yellow Curry", "color": "#FFD700", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 6, 6, 6, 6]}, {"id": "p79", "dex": 79, "name": "Slowpoke", "recipe": "Mouth-Watering Dip", "color": "#DA70D6", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 3, 3, 4]}, {"id": "p81", "dex": 81, "name": "Magnemite", "recipe": "Watt a Risotto", "color": "#20B2AA", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 6, 6, 6]}, {"id": "p83", "dex": 83, "name": "Farfetch'd", "recipe": "Light-as-Air Casserole", "color": "#FF8C00", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 4, 4, 4]}, {"id": "p84", "dex": 84, "name": "Doduo", "recipe": "Red Stew", "color": "#9B59B6", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p86", "dex": 86, "name": "Seel", "recipe": "Mouth-Watering Dip", "color": "#3498DB", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 3, 3, 4]}, {"id": "p88", "dex": 88, "name": "Grimer", "recipe": "Blue Soda", "color": "#E74C3C", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p90", "dex": 90, "name": "Shellder", "recipe": "Gray Porridge", "color": "#2ECC71", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 8, 8, 8, 8]}, {"id": "p92", "dex": 92, "name": "Gastly", "recipe": "Sludge Soup", "color": "#F39C12", "is_legendary": false, "row_a": [1, 4, 8, 9, 9], "row_b": [1, 2, 8, 8, 8]}, {"id": "p95", "dex": 95, "name": "Onix", "recipe": "Mud Pie", "color": "#FF6B6B", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 2, 4, 4]}, {"id": "p96", "dex": 96, "name": "Drowzee", "recipe": "Brain Food", "color": "#4ECDC4", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [4, 4, 6, 6, 6]}, {"id": "p98", "dex": 98, "name": "Krabby", "recipe": "Red Stew", "color": "#45B7D1", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p100", "dex": 100, "name": "Voltorb", "recipe": "Watt a Risotto", "color": "#96CEB4", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 6, 6, 6]}, {"id": "p102", "dex": 102, "name": "Exeggcute", "recipe": "Brain Food", "color": "#F7DC6F", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [4, 4, 6, 6, 6]}, {"id": "p104", "dex": 104, "name": "Cubone", "recipe": "Mud Pie", "color": "#DDA0DD", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 2, 4, 4]}, {"id": "p106", "dex": 106, "name": "Hitmonlee", "recipe": "Get Swole Syrup", "color": "#98D8C8", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p107", "dex": 107, "name": "Hitmonchan", "recipe": "Get Swole Syrup", "color": "#FFB347", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p108", "dex": 108, "name": "Lickitung", "recipe": "Red Stew", "color": "#87CEEB", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p109", "dex": 109, "name": "Koffing", "recipe": "Blue Soda", "color": "#F08080", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p111", "dex": 111, "name": "Rhyhorn", "recipe": "Gray Porridge", "color": "#90EE90", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 8, 8, 8, 8]}, {"id": "p113", "dex": 113, "name": "Chansey", "recipe": "Plain Crepe", "color": "#FFD700", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p114", "dex": 114, "name": "Tangela", "recipe": "Veggie Smoothie", "color": "#DA70D6", "is_legendary": false, "row_a": [2, 4, 5, 9, 9], "row_b": [2, 2, 2, 4, 5]}, {"id": "p115", "dex": 115, "name": "Kangaskhan", "recipe": "Plain Crepe", "color": "#20B2AA", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p116", "dex": 116, "name": "Horsea", "recipe": "Blue Soda", "color": "#FF8C00", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p118", "dex": 118, "name": "Goldeen", "recipe": "Red Stew", "color": "#9B59B6", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p120", "dex": 120, "name": "Staryu", "recipe": "Yellow Curry", "color": "#3498DB", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 6, 6, 6, 6]}, {"id": "p122", "dex": 122, "name": "Mr. Mime", "recipe": "Brain Food", "color": "#E74C3C", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [4, 4, 6, 6, 6]}, {"id": "p123", "dex": 123, "name": "Scyther", "recipe": "Light-as-Air Casserole", "color": "#2ECC71", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 4, 4, 4]}, {"id": "p124", "dex": 124, "name": "Jynx", "recipe": "Brain Food", "color": "#F39C12", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [4, 4, 6, 6, 6]}, {"id": "p125", "dex": 125, "name": "Electabuzz", "recipe": "Watt a Risotto", "color": "#FF6B6B", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 6, 6, 6]}, {"id": "p126", "dex": 126, "name": "Magmar", "recipe": "Red Stew", "color": "#4ECDC4", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p127", "dex": 127, "name": "Pinsir", "recipe": "Red Stew", "color": "#45B7D1", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 2, 2, 2, 2]}, {"id": "p128", "dex": 128, "name": "Tauros", "recipe": "Plain Crepe", "color": "#96CEB4", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p129", "dex": 129, "name": "Magikarp", "recipe": "Blue Soda", "color": "#F7DC6F", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p131", "dex": 131, "name": "Lapras", "recipe": "Mouth-Watering Dip", "color": "#DDA0DD", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [2, 2, 3, 3, 4]}, {"id": "p132", "dex": 132, "name": "Ditto", "recipe": "Blue Soda", "color": "#98D8C8", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p133", "dex": 133, "name": "Eevee", "recipe": "Plain Crepe", "color": "#FFB347", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p137", "dex": 137, "name": "Porygon", "recipe": "Plain Crepe", "color": "#87CEEB", "is_legendary": false, "row_a": [2, 4, 6, 9, 9], "row_b": [6, 6, 6, 8, 8]}, {"id": "p138", "dex": 138, "name": "Omanyte", "recipe": "Stone Soup", "color": "#F08080", "is_legendary": false, "row_a": [2, 4, 5, 9, 9], "row_b": [2, 4, 4, 4, 5]}, {"id": "p140", "dex": 140, "name": "Kabuto", "recipe": "Stone Soup", "color": "#90EE90", "is_legendary": false, "row_a": [2, 4, 5, 9, 9], "row_b": [2, 4, 4, 4, 5]}, {"id": "p142", "dex": 142, "name": "Aerodactyl", "recipe": "Stone Soup", "color": "#FFD700", "is_legendary": false, "row_a": [2, 4, 5, 9, 9], "row_b": [2, 4, 4, 4, 5]}, {"id": "p143", "dex": 143, "name": "Snorlax", "recipe": "Yellow Curry", "color": "#DA70D6", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 6, 6, 6, 6]}, {"id": "p144", "dex": 144, "name": "Articuno", "recipe": "Ambrosia of Legends", "color": "#20B2AA", "is_legendary": true, "row_a": [10, 10, 10, 10, 10], "row_b": [10, 10, 10, 10, 10]}, {"id": "p145", "dex": 145, "name": "Zapdos", "recipe": "Ambrosia of Legends", "color": "#FF8C00", "is_legendary": true, "row_a": [10, 10, 10, 10, 10], "row_b": [10, 10, 10, 10, 10]}, {"id": "p146", "dex": 146, "name": "Moltres", "recipe": "Ambrosia of Legends", "color": "#9B59B6", "is_legendary": true, "row_a": [10, 10, 10, 10, 10], "row_b": [10, 10, 10, 10, 10]}, {"id": "p147", "dex": 147, "name": "Dratini", "recipe": "Blue Soda", "color": "#3498DB", "is_legendary": false, "row_a": [9, 9, 9, 9, 9], "row_b": [2, 4, 4, 4, 4]}, {"id": "p150", "dex": 150, "name": "Mewtwo", "recipe": "Ambrosia of Legends", "color": "#E74C3C", "is_legendary": true, "row_a": [10, 10, 10, 10, 10], "row_b": [10, 10, 10, 10, 10]}, {"id": "p151", "dex": 151, "name": "Mew", "recipe": "Ambrosia of Legends", "color": "#2ECC71", "is_legendary": true, "row_a": [10, 10, 10, 10, 10], "row_b": [10, 10, 10, 10, 10]}];
+
+const ING = {
+  1:  {name:"Tiny Mushroom",  slug:"tinymushroom"},
+  2:  {name:"Big Root",       slug:"bigroot"},
+  3:  {name:"Bluk Berry",     slug:"blukberry"},
+  4:  {name:"Icy Rock",       slug:"icyrock"},
+  5:  {name:"Apricorn",       slug:"apricorn"},
+  6:  {name:"Honey",          slug:"honey"},
+  7:  {name:"Fossil",         slug:"fossil"},
+  8:  {name:"Balm Mushroom",  slug:"balmmushroom"},
+  9:  {name:"Rainbow Matter", slug:"rainbowmatter"},
+  10: {name:"Mystical Shell", slug:"mysticalshell"}
+};
+const ING_BASE = "https://raw.githubusercontent.com/gianemi2/pokemon-quest-recipes-maker/master/assets/ingredient-image";
+const ART_BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork";
+
+function ingUrl(id) { return `${ING_BASE}/${ING[id].slug}.png`; }
+function artUrl(dex) { return `${ART_BASE}/${dex}.png`; }
+
+function ingRowHTML(ids, label, labelClass, badgeColor) {
+  const cards = ids.map((id,i) => `
+    <div class="ing-card">
+      <img class="ing-img" src="${ingUrl(id)}" alt="${ING[id].name}" loading="lazy">
+      <span class="ing-name">${ING[id].name}</span>
+      <span class="ing-badge" style="background:${badgeColor}">${i+1}</span>
+    </div>`).join('');
+  return `<div class="recipe-section">
+    <div class="row-label ${labelClass}">${label}</div>
+    <div class="ing-row">${cards}</div>
+  </div>`;
+}
+
+function renderDetail(p) {
+  const tooMuchRainbow = !p.is_legendary && p.row_a.filter(id => id === 9).length >= 3;
+
+  const rowA = p.is_legendary
+    ? ingRowHTML(p.row_a, '&#9733; Legendary Recipe &mdash; Mystical Shell', 'legendary-lbl', p.color)
+    : tooMuchRainbow ? ''
+    : ingRowHTML(p.row_a, '&#9733; With Rainbow Matter', 'rainbow', p.color);
+
+  const rowB = p.is_legendary
+    ? `<div class="recipe-section">
+         <div class="row-label everyday">&#9679; Everyday Ingredients</div>
+         <div class="legendary-note">
+           This Legendary can only be cooked<br>with 5 Mystical Shells.<br>
+           <strong>No everyday substitute exists!</strong>
+         </div>
+       </div>`
+    : ingRowHTML(p.row_b, '&#9679; Everyday Ingredients', 'everyday', p.color);
+
+  const prompt = (p.is_legendary || tooMuchRainbow) ? '' :
+    `<p class="count-prompt">Count 5 ingredients in each row &mdash; can you do it? &#9733;</p>`;
+
+  return `
+    <div class="card-banner" style="background:${p.color}">
+      <div class="banner-circle1"></div>
+      <div class="banner-circle2"></div>
+      <img class="poke-art" src="${artUrl(p.dex)}" alt="${p.name}">
+      <div class="poke-title">${p.name}</div>
+      <div class="recipe-pill">Cook a ${p.recipe}!</div>
+    </div>
+    ${rowA}
+    ${rowB}
+    ${prompt}
+    <p class="card-footer">#${String(p.dex).padStart(3,'0')} &bull; Pok&eacute;mon Quest Cooking Book</p>`;
+}
+
+function showTOC() {
+  document.getElementById('toc-view').style.display = '';
+  document.getElementById('detail-view').style.display = 'none';
+  document.getElementById('back-btn').classList.remove('show');
+  document.querySelector('.top-title').textContent = 'Pokemon Cooking Book';
+  window.scrollTo(0, 0);
+}
+
+function showPokemon(id) {
+  const p = POKEMON.find(x => x.id === id);
+  if (!p) { showTOC(); return; }
+  const dv = document.getElementById('detail-view');
+  dv.innerHTML = renderDetail(p);
+  dv.style.display = '';
+  document.getElementById('toc-view').style.display = 'none';
+  document.getElementById('back-btn').classList.add('show');
+  document.querySelector('.top-title').textContent = p.name;
+  window.scrollTo(0, 0);
+}
+
+function navigate(id) {
+  if (id) location.hash = id;
+  else { history.pushState('', document.title, location.pathname + location.search); showTOC(); }
+}
+
+document.getElementById('back-btn').addEventListener('click', () => navigate(''));
+window.addEventListener('hashchange', () => {
+  const id = location.hash.slice(1);
+  if (id) showPokemon(id); else showTOC();
+});
+
+// Build TOC grid
+const grid = document.getElementById('poke-grid');
+grid.innerHTML = POKEMON.map(p => `
+  <div class="poke-thumb" onclick="navigate('${p.id}')">
+    <div class="thumb-circle" style="background:${p.color}22">
+      <img src="${artUrl(p.dex)}" alt="${p.name}" loading="lazy">
+    </div>
+    <span class="thumb-name">${p.name}</span>
+    <span class="thumb-num">#${String(p.dex).padStart(3,'0')}</span>
+  </div>`).join('');
+
+// Initial route
+const initHash = location.hash.slice(1);
+if (initHash) showPokemon(initHash); else showTOC();
+
+  </script>
+</body>
+</html>
