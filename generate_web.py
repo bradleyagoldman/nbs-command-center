@@ -488,8 +488,11 @@ function ingRowHTML(ids, label, labelClass, badgeColor) {
 }
 
 function renderDetail(p) {
+  const tooMuchRainbow = !p.is_legendary && p.row_a.filter(id => id === 9).length >= 3;
+
   const rowA = p.is_legendary
     ? ingRowHTML(p.row_a, '&#9733; Legendary Recipe &mdash; Mystical Shell', 'legendary-lbl', p.color)
+    : tooMuchRainbow ? ''
     : ingRowHTML(p.row_a, '&#9733; With Rainbow Matter', 'rainbow', p.color);
 
   const rowB = p.is_legendary
@@ -502,7 +505,7 @@ function renderDetail(p) {
        </div>`
     : ingRowHTML(p.row_b, '&#9679; Everyday Ingredients', 'everyday', p.color);
 
-  const prompt = p.is_legendary ? '' :
+  const prompt = (p.is_legendary || tooMuchRainbow) ? '' :
     `<p class="count-prompt">Count 5 ingredients in each row &mdash; can you do it? &#9733;</p>`;
 
   return `

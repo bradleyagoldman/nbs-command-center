@@ -719,7 +719,7 @@ def make_card(c, display_name, dex_num, recipe_name, row_a_ids, row_b_ids, is_le
     c.setFillAlpha(1.0); c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 16)
     c.drawCentredString(w/2, h-banner_h+20, f"Cook a {short}!")
 
-    # --- Layout for TWO ingredient rows ---
+    # --- Layout for ingredient rows ---
     card_w = 90
     card_h = 95
     gap = 13
@@ -729,41 +729,44 @@ def make_card(c, display_name, dex_num, recipe_name, row_a_ids, row_b_ids, is_le
 
     content_top = h - banner_h - 52
 
-    # Row A
-    label_a_y = content_top - 24
-    row_a_y   = label_a_y - card_h - 4
-    badge_a_y = row_a_y - 22
-    sep_y     = badge_a_y - 10
+    # Hide Row A when it would be mostly Rainbow Matter (≥3 of 5) — not useful for a child
+    show_row_a = is_legendary or (row_a_ids.count(9) < 3)
 
-    # Row B
-    label_b_y = sep_y - 14
-    row_b_y   = label_b_y - card_h - 4
-    badge_b_y = row_b_y - 22
+    if show_row_a:
+        label_a_y = content_top - 24
+        row_a_y   = label_a_y - card_h - 4
+        badge_a_y = row_a_y - 22
+        sep_y     = badge_a_y - 10
 
-    # Row A label & content
-    if is_legendary:
-        label_a_text = "★  Legendary Recipe  (Mystical Shell)"
-        label_a_col  = (0.72, 0.55, 0.00)   # gold
+        label_b_y = sep_y - 14
+        row_b_y   = label_b_y - card_h - 4
+        badge_b_y = row_b_y - 22
+
+        if is_legendary:
+            label_a_text = "★  Legendary Recipe  (Mystical Shell)"
+            label_a_col  = (0.72, 0.55, 0.00)
+        else:
+            label_a_text = "★  With Rainbow Matter"
+            label_a_col  = (0.55, 0.10, 0.80)
+
+        c.setFillColorRGB(*label_a_col)
+        c.roundRect(sx-4, label_a_y-2, total_row_w+8, 24, 7, fill=1, stroke=0)
+        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 13)
+        c.drawString(sx+8, label_a_y+3, label_a_text)
+        draw_ingredient_row(c, row_a_ids, sx, row_a_y, card_w, card_h, gap, cr, cg, cb)
+        for idx in range(n):
+            bx2 = sx + idx*(card_w+gap) + card_w/2
+            c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_a_y+11, 11, fill=1, stroke=0)
+            c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
+            c.drawCentredString(bx2, badge_a_y+6, str(idx+1))
+
+        c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(1.5)
+        c.line(sx, sep_y, sx+total_row_w, sep_y)
     else:
-        label_a_text = "★  With Rainbow Matter"
-        label_a_col  = (0.55, 0.10, 0.80)   # purple
-
-    c.setFillColorRGB(*label_a_col)
-    c.roundRect(sx-4, label_a_y-2, total_row_w+8, 24, 7, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 13)
-    c.drawString(sx+8, label_a_y+3, label_a_text)
-
-    draw_ingredient_row(c, row_a_ids, sx, row_a_y, card_w, card_h, gap, cr, cg, cb)
-
-    for idx in range(n):
-        bx2 = sx + idx*(card_w+gap) + card_w/2
-        c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_a_y+11, 11, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
-        c.drawCentredString(bx2, badge_a_y+6, str(idx+1))
-
-    # Separator
-    c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(1.5)
-    c.line(sx, sep_y, sx+total_row_w, sep_y)
+        # Row A suppressed — place Row B at top of content area
+        label_b_y = content_top - 24
+        row_b_y   = label_b_y - card_h - 4
+        badge_b_y = row_b_y - 22
 
     # Row B label & content
     c.setFillColorRGB(0.88, 0.44, 0.05)
@@ -771,7 +774,6 @@ def make_card(c, display_name, dex_num, recipe_name, row_a_ids, row_b_ids, is_le
     c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 13)
 
     if is_legendary:
-        # Legendary Pokémon have no common substitute — show a note instead
         c.drawString(sx+8, label_b_y+3, "●  Everyday Ingredients")
         note_y = (row_b_y + row_b_y + card_h) / 2
         c.setFillColorRGB(0.50, 0.50, 0.50); c.setFont("DV-Bold", 15)
@@ -791,7 +793,7 @@ def make_card(c, display_name, dex_num, recipe_name, row_a_ids, row_b_ids, is_le
     prompt_y = badge_b_y - 24
     if not is_legendary and prompt_y > 20:
         c.setFillColorRGB(0.35,0.35,0.35); c.setFont("DV-Bold", 13)
-        c.drawCentredString(w/2, prompt_y, "Count 5 ingredients in each row -- can you do it?  ★")
+        c.drawCentredString(w/2, prompt_y, "Count 5 ingredients -- can you do it?  ★")
 
     # Footer
     c.setFillColorRGB(0.68,0.68,0.68); c.setFont("DV-Regular", 9)
