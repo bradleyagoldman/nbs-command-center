@@ -380,16 +380,20 @@ function showPokemon(id) {
 
 document.getElementById('back-btn').addEventListener('click', showTOC);
 
-// Build TOC grid
+// Build TOC grid imperatively so event listeners are always attached
 const grid = document.getElementById('poke-grid');
-grid.innerHTML = POKEMON.map(p => `
-  <div class="poke-thumb" onclick="showPokemon('${p.id}')">
+POKEMON.forEach(p => {
+  const div = document.createElement('div');
+  div.className = 'poke-thumb';
+  div.innerHTML = `
     <div class="thumb-circle" style="background:${p.color}22">
       <img src="${artUrl(p.dex)}" alt="${p.name}" loading="lazy">
     </div>
     <span class="thumb-name">${p.name}</span>
-    <span class="thumb-num">#${String(p.dex).padStart(3,'0')}</span>
-  </div>`).join('');
+    <span class="thumb-num">#${String(p.dex).padStart(3,'0')}</span>`;
+  div.addEventListener('click', function() { showPokemon(p.id); });
+  grid.appendChild(div);
+});
 
   </script>
 </body>
