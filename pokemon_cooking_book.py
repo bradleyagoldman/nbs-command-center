@@ -18,6 +18,8 @@ import requests
 from PIL import Image as PILImage, ImageDraw, ImageFont
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas as pdfgen_canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 # ---------------------------------------------------------------------------
 # Config
@@ -29,7 +31,12 @@ ASSETS_DIR.mkdir(exist_ok=True)
 (ASSETS_DIR / "ingredients").mkdir(exist_ok=True)
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (personal-use PDF builder)"}
-BOLD_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+BOLD_FONT    = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+REGULAR_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+# Register DejaVu with ReportLab so it can render ★, ♀, ♂, é, etc.
+pdfmetrics.registerFont(TTFont("DV-Bold",    BOLD_FONT))
+pdfmetrics.registerFont(TTFont("DV-Regular", REGULAR_FONT))
 
 # Ingredient: m_no → (label, slug)
 INGREDIENTS = {
@@ -611,21 +618,21 @@ def make_title_page(c):
         c.circle(cx, cy, r, fill=1, stroke=0)
     c.setFillAlpha(1.0)
     c.setFillColorRGB(1,1,1)
-    c.setFont("Helvetica-Bold", 58); c.drawCentredString(w/2, h*0.845, "Pokémon")
-    c.setFont("Helvetica-Bold", 48); c.drawCentredString(w/2, h*0.745, "Cooking Book")
+    c.setFont("DV-Bold", 58); c.drawCentredString(w/2, h*0.845, "Pokémon")
+    c.setFont("DV-Bold", 48); c.drawCentredString(w/2, h*0.745, "Cooking Book")
     c.setFillColorRGB(1.0,0.85,0.0)
     c.roundRect(w*0.10, h*0.615, w*0.80, 34, 17, fill=1, stroke=0)
-    c.setFillColorRGB(0.2,0.10,0.0); c.setFont("Helvetica-Bold", 17)
+    c.setFillColorRGB(0.2,0.10,0.0); c.setFont("DV-Bold", 17)
     c.drawCentredString(w/2, h*0.625, "Look, Cook and Count the Ingredients!")
     c.setFillColorRGB(0.30,0.80,0.78)
     c.rect(0, 0, w, h*0.37, fill=1, stroke=0)
     c.setFillColorRGB(0.20,0.65,0.63)
     c.roundRect(w*0.29, h*0.09, w*0.42, h*0.22, 28, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold",64)
-    c.drawCentredString(w/2, h*0.18, "🍲")
-    c.setFont("Helvetica-Bold",20); c.drawCentredString(w/2, h*0.075, "Time to Cook!")
-    c.setFillColorRGB(1,1,1); c.setFillAlpha(0.45); c.setFont("Helvetica", 9)
-    c.drawCentredString(w/2, 14, "Pokémon Quest Cooking Book  •  Personal home use  •  79 Pokémon inside!")
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold",28)
+    c.drawCentredString(w/2, h*0.175, "Time to Cook!")
+    c.setFont("DV-Regular",14); c.drawCentredString(w/2, h*0.14, "79 Pokemon inside!")
+    c.setFillColorRGB(1,1,1); c.setFillAlpha(0.45); c.setFont("DV-Regular", 9)
+    c.drawCentredString(w/2, 14, "Pokemon Quest Cooking Book  *  Personal home use  *  79 Pokemon inside!")
     c.setFillAlpha(1.0)
     c.showPage()
 
@@ -660,7 +667,7 @@ def draw_ingredient_row(c, ing_ids, sx, row_y, card_w, card_h, gap, border_r, bo
             c.rect(ix, iy, isize, isize, fill=1, stroke=0)
 
         # Name label
-        c.setFillColorRGB(0.12,0.12,0.12); c.setFont("Helvetica-Bold", 11)
+        c.setFillColorRGB(0.12,0.12,0.12); c.setFont("DV-Bold", 11)
         words = name.split()
         if len(words) <= 2:
             c.drawCentredString(cx + card_w/2, row_y + 14, name)
@@ -689,7 +696,7 @@ def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simp
     c.setFillAlpha(1.0)
 
     # Pokémon name
-    c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 32)
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 32)
     c.drawCentredString(w/2, h-46, display_name)
 
     # Pokémon image
@@ -709,7 +716,7 @@ def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simp
     bx = w/2 - bw/2
     c.setFillColorRGB(0,0,0); c.setFillAlpha(0.22)
     c.roundRect(bx, h-banner_h+12, bw, 27, 13, fill=1, stroke=0)
-    c.setFillAlpha(1.0); c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 15)
+    c.setFillAlpha(1.0); c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 15)
     c.drawCentredString(w/2, h-banner_h+17, f"Cook a {short}!")
 
     # --- Layout for THREE ingredient rows ---
@@ -743,15 +750,15 @@ def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simp
     # ---- Row A ----
     c.setFillColorRGB(0.55, 0.10, 0.80)
     c.roundRect(sx-4, label_a_y-2, total_row_w+8, 22, 6, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 12)
-    c.drawString(sx+6, label_a_y+2, "⭐  Best Recipe  (with Rainbow Matter)")
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
+    c.drawString(sx+6, label_a_y+2, "★  Best Recipe  (with Rainbow Matter)")
 
     draw_ingredient_row(c, rainbow_ids, sx, row_a_y, card_w, card_h, gap, cr, cg, cb)
 
     for idx in range(n):
         bx2 = sx + idx*(card_w+gap) + card_w/2
         c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_a_y+10, 10, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 11)
+        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 11)
         c.drawCentredString(bx2, badge_a_y+5, str(idx+1))
 
     c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(1)
@@ -760,15 +767,15 @@ def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simp
     # ---- Row B ----
     c.setFillColorRGB(0.15, 0.65, 0.30)
     c.roundRect(sx-4, label_b_y-2, total_row_w+8, 22, 6, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 12)
-    c.drawString(sx+6, label_b_y+2, "🍳  No Rainbow Matter")
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
+    c.drawString(sx+6, label_b_y+2, "◆  No Rainbow Matter")
 
     draw_ingredient_row(c, easy_ids, sx, row_b_y, card_w, card_h, gap, cr, cg, cb)
 
     for idx in range(n):
         bx2 = sx + idx*(card_w+gap) + card_w/2
         c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_b_y+10, 10, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 11)
+        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 11)
         c.drawCentredString(bx2, badge_b_y+5, str(idx+1))
 
     c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(1)
@@ -777,25 +784,25 @@ def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simp
     # ---- Row C ----
     c.setFillColorRGB(0.88, 0.44, 0.05)
     c.roundRect(sx-4, label_c_y-2, total_row_w+8, 22, 6, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 12)
-    c.drawString(sx+6, label_c_y+2, "🌿  Common Ingredients  (no Rainbow or Shells)")
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
+    c.drawString(sx+6, label_c_y+2, "●  Common Ingredients  (no Rainbow or Shells)")
 
     draw_ingredient_row(c, simple_ids, sx, row_c_y, card_w, card_h, gap, cr, cg, cb)
 
     for idx in range(n):
         bx2 = sx + idx*(card_w+gap) + card_w/2
         c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_c_y+10, 10, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold", 11)
+        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 11)
         c.drawCentredString(bx2, badge_c_y+5, str(idx+1))
 
     # Counting prompt
     prompt_y = badge_c_y - 18
     if prompt_y > 20:
-        c.setFillColorRGB(0.35,0.35,0.35); c.setFont("Helvetica-Bold", 12)
-        c.drawCentredString(w/2, prompt_y, "Count 5 ingredients in each row — can you do it? 🌟")
+        c.setFillColorRGB(0.35,0.35,0.35); c.setFont("DV-Bold", 12)
+        c.drawCentredString(w/2, prompt_y, "Count 5 ingredients in each row -- can you do it?  ★")
 
     # Footer
-    c.setFillColorRGB(0.68,0.68,0.68); c.setFont("Helvetica", 9)
+    c.setFillColorRGB(0.68,0.68,0.68); c.setFont("DV-Regular", 9)
     c.drawCentredString(w/2, 12, f"#{dex_num:03d}  •  Pokémon Quest Cooking Book")
 
     c.showPage()
