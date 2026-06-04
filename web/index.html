@@ -378,31 +378,18 @@ function showPokemon(id) {
   window.scrollTo(0, 0);
 }
 
-function navigate(id) {
-  if (id) location.hash = id;
-  else { history.pushState('', document.title, location.pathname + location.search); showTOC(); }
-}
-
-document.getElementById('back-btn').addEventListener('click', () => navigate(''));
-window.addEventListener('hashchange', () => {
-  const id = location.hash.slice(1);
-  if (id) showPokemon(id); else showTOC();
-});
+document.getElementById('back-btn').addEventListener('click', showTOC);
 
 // Build TOC grid
 const grid = document.getElementById('poke-grid');
 grid.innerHTML = POKEMON.map(p => `
-  <div class="poke-thumb" onclick="navigate('${p.id}')">
+  <div class="poke-thumb" onclick="showPokemon('${p.id}')">
     <div class="thumb-circle" style="background:${p.color}22">
       <img src="${artUrl(p.dex)}" alt="${p.name}" loading="lazy">
     </div>
     <span class="thumb-name">${p.name}</span>
     <span class="thumb-num">#${String(p.dex).padStart(3,'0')}</span>
   </div>`).join('');
-
-// Initial route
-const initHash = location.hash.slice(1);
-if (initHash) showPokemon(initHash); else showTOC();
 
   </script>
 </body>
