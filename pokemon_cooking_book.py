@@ -528,10 +528,10 @@ def parse_recipe_db(text):
 
 def parse_combos(text):
     """
-    Returns {db_key: (rainbow_combo, easy_combo, simple_combo)}
-    rainbow_combo = best overall [ing_id x5]
-    easy_combo    = best without ingredient 9 (Rainbow Matter)
-    simple_combo  = best without ingredient 9 OR 10 (no Rainbow Matter, no Mystical Shell)
+    Returns {db_key: (best, rns, simple)}
+    best   = best overall (may include Rainbow + Shell) — used for legendary row A
+    rns    = best WITH Rainbow (9) but WITHOUT Shell (10) — used for non-legendary row A
+    simple = best WITHOUT Rainbow OR Shell — used for row B (everyone)
     """
     result = {}
     key_pat = re.compile(
@@ -550,8 +550,8 @@ def parse_combos(text):
         array_text = text[start:i-1]
 
         best_p, best_c = -1.0, []
-        easy_p, easy_c = -1.0, []
-        simp_p, simp_c = -1.0, []
+        rns_p,  rns_c  = -1.0, []   # rainbow, no shell
+        simp_p, simp_c = -1.0, []   # no rainbow, no shell
 
         for em in re.finditer(r'\{[^{}]+\}', array_text, re.DOTALL):
             entry = em.group(0)
@@ -568,15 +568,15 @@ def parse_combos(text):
             if len(combo) != 5: continue
             if price > best_p:
                 best_p, best_c = price, combo
-            if 9 not in combo and price > easy_p:
-                easy_p, easy_c = price, combo
+            if 9 in combo and 10 not in combo and price > rns_p:
+                rns_p, rns_c = price, combo
             if 9 not in combo and 10 not in combo and price > simp_p:
                 simp_p, simp_c = price, combo
 
         if best_c:
-            easy = easy_c if easy_c else best_c
-            simp = simp_c if simp_c else easy
-            result[db_key] = (best_c, easy, simp)
+            easy_no_shell = rns_c if rns_c else best_c
+            simp = simp_c if simp_c else easy_no_shell
+            result[db_key] = (best_c, easy_no_shell, simp)
     return result
 
 # ---------------------------------------------------------------------------
@@ -677,7 +677,7 @@ def draw_ingredient_row(c, ing_ids, sx, row_y, card_w, card_h, gap, border_r, bo
             c.drawCentredString(cx + card_w/2, row_y + 9, " ".join(words[mid:]))
 
 
-def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simple_ids, img_path, color_idx):
+def make_card(c, display_name, dex_num, recipe_name, row_a_ids, row_b_ids, is_legendary, img_path, color_idx):
     w, h = PAGE_W, PAGE_H
     hex_col = BANNER_COLORS[color_idx % len(BANNER_COLORS)]
     cr, cg, cb = hex_rgb(hex_col)
@@ -686,23 +686,23 @@ def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simp
     c.setFillColorRGB(0.97, 0.97, 0.97)
     c.rect(0, 0, w, h, fill=1, stroke=0)
 
-    # Banner (30% — slightly shorter to give more room for 3 rows)
-    banner_h = h * 0.30
+    # Banner (33%)
+    banner_h = h * 0.33
     c.setFillColorRGB(cr, cg, cb)
     c.rect(0, h - banner_h, w, banner_h, fill=1, stroke=0)
     c.setFillColorRGB(1,1,1); c.setFillAlpha(0.10)
-    c.circle(w*0.82, h-banner_h*0.35, 80, fill=1, stroke=0)
-    c.circle(w*0.12, h-26, 44, fill=1, stroke=0)
+    c.circle(w*0.82, h-banner_h*0.35, 90, fill=1, stroke=0)
+    c.circle(w*0.12, h-28, 50, fill=1, stroke=0)
     c.setFillAlpha(1.0)
 
     # Pokémon name
-    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 32)
-    c.drawCentredString(w/2, h-46, display_name)
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 36)
+    c.drawCentredString(w/2, h-50, display_name)
 
     # Pokémon image
-    img_size = 110
+    img_size = 125
     img_x = w/2 - img_size/2
-    img_y = h - banner_h + (banner_h - img_size)/2 - 10
+    img_y = h - banner_h + (banner_h - img_size)/2 - 14
     if img_path and Path(img_path).exists():
         try:
             c.drawImage(img_path, img_x, img_y, width=img_size, height=img_size,
@@ -715,95 +715,87 @@ def make_card(c, display_name, dex_num, recipe_name, rainbow_ids, easy_ids, simp
     bw = min(len(short)*11+38, w-56)
     bx = w/2 - bw/2
     c.setFillColorRGB(0,0,0); c.setFillAlpha(0.22)
-    c.roundRect(bx, h-banner_h+12, bw, 27, 13, fill=1, stroke=0)
-    c.setFillAlpha(1.0); c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 15)
-    c.drawCentredString(w/2, h-banner_h+17, f"Cook a {short}!")
+    c.roundRect(bx, h-banner_h+14, bw, 30, 15, fill=1, stroke=0)
+    c.setFillAlpha(1.0); c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 16)
+    c.drawCentredString(w/2, h-banner_h+20, f"Cook a {short}!")
 
-    # --- Layout for THREE ingredient rows ---
-    card_w = 89
-    card_h = 84
-    gap = 12
+    # --- Layout for TWO ingredient rows ---
+    card_w = 90
+    card_h = 95
+    gap = 13
     n = 5
     total_row_w = n*card_w + (n-1)*gap
     sx = (w - total_row_w)/2
 
-    # Content starts below the badge area
-    content_top = h - banner_h - 48
+    content_top = h - banner_h - 52
 
-    # Row A: Rainbow Matter (⭐ Best Quality)
-    label_a_y = content_top - 22
-    row_a_y   = label_a_y - card_h - 2
-    badge_a_y = row_a_y - 20
-    sep_a_y   = badge_a_y - 6
+    # Row A
+    label_a_y = content_top - 24
+    row_a_y   = label_a_y - card_h - 4
+    badge_a_y = row_a_y - 22
+    sep_y     = badge_a_y - 10
 
-    # Row B: No Rainbow Matter (🍳)
-    label_b_y = sep_a_y - 9
-    row_b_y   = label_b_y - card_h - 2
-    badge_b_y = row_b_y - 20
-    sep_b_y   = badge_b_y - 6
+    # Row B
+    label_b_y = sep_y - 14
+    row_b_y   = label_b_y - card_h - 4
+    badge_b_y = row_b_y - 22
 
-    # Row C: No Rainbow, No Mystical Shell (🌿)
-    label_c_y = sep_b_y - 9
-    row_c_y   = label_c_y - card_h - 2
-    badge_c_y = row_c_y - 20
+    # Row A label & content
+    if is_legendary:
+        label_a_text = "★  Legendary Recipe  (Mystical Shell)"
+        label_a_col  = (0.72, 0.55, 0.00)   # gold
+    else:
+        label_a_text = "★  With Rainbow Matter"
+        label_a_col  = (0.55, 0.10, 0.80)   # purple
 
-    # ---- Row A ----
-    c.setFillColorRGB(0.55, 0.10, 0.80)
-    c.roundRect(sx-4, label_a_y-2, total_row_w+8, 22, 6, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
-    c.drawString(sx+6, label_a_y+2, "★  Best Recipe  (with Rainbow Matter)")
+    c.setFillColorRGB(*label_a_col)
+    c.roundRect(sx-4, label_a_y-2, total_row_w+8, 24, 7, fill=1, stroke=0)
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 13)
+    c.drawString(sx+8, label_a_y+3, label_a_text)
 
-    draw_ingredient_row(c, rainbow_ids, sx, row_a_y, card_w, card_h, gap, cr, cg, cb)
-
-    for idx in range(n):
-        bx2 = sx + idx*(card_w+gap) + card_w/2
-        c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_a_y+10, 10, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 11)
-        c.drawCentredString(bx2, badge_a_y+5, str(idx+1))
-
-    c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(1)
-    c.line(sx, sep_a_y, sx+total_row_w, sep_a_y)
-
-    # ---- Row B ----
-    c.setFillColorRGB(0.15, 0.65, 0.30)
-    c.roundRect(sx-4, label_b_y-2, total_row_w+8, 22, 6, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
-    c.drawString(sx+6, label_b_y+2, "◆  No Rainbow Matter")
-
-    draw_ingredient_row(c, easy_ids, sx, row_b_y, card_w, card_h, gap, cr, cg, cb)
+    draw_ingredient_row(c, row_a_ids, sx, row_a_y, card_w, card_h, gap, cr, cg, cb)
 
     for idx in range(n):
         bx2 = sx + idx*(card_w+gap) + card_w/2
-        c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_b_y+10, 10, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 11)
-        c.drawCentredString(bx2, badge_b_y+5, str(idx+1))
+        c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_a_y+11, 11, fill=1, stroke=0)
+        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
+        c.drawCentredString(bx2, badge_a_y+6, str(idx+1))
 
-    c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(1)
-    c.line(sx, sep_b_y, sx+total_row_w, sep_b_y)
+    # Separator
+    c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(1.5)
+    c.line(sx, sep_y, sx+total_row_w, sep_y)
 
-    # ---- Row C ----
+    # Row B label & content
     c.setFillColorRGB(0.88, 0.44, 0.05)
-    c.roundRect(sx-4, label_c_y-2, total_row_w+8, 22, 6, fill=1, stroke=0)
-    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
-    c.drawString(sx+6, label_c_y+2, "●  Common Ingredients  (no Rainbow or Shells)")
+    c.roundRect(sx-4, label_b_y-2, total_row_w+8, 24, 7, fill=1, stroke=0)
+    c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 13)
 
-    draw_ingredient_row(c, simple_ids, sx, row_c_y, card_w, card_h, gap, cr, cg, cb)
-
-    for idx in range(n):
-        bx2 = sx + idx*(card_w+gap) + card_w/2
-        c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_c_y+10, 10, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 11)
-        c.drawCentredString(bx2, badge_c_y+5, str(idx+1))
+    if is_legendary:
+        # Legendary Pokémon have no common substitute — show a note instead
+        c.drawString(sx+8, label_b_y+3, "●  Everyday Ingredients")
+        note_y = (row_b_y + row_b_y + card_h) / 2
+        c.setFillColorRGB(0.50, 0.50, 0.50); c.setFont("DV-Bold", 15)
+        c.drawCentredString(w/2, note_y + 14, "This Legendary can only be cooked")
+        c.drawCentredString(w/2, note_y - 6, "with 5 Mystical Shells.")
+        c.drawCentredString(w/2, note_y - 26, "No everyday substitute exists!")
+    else:
+        c.drawString(sx+8, label_b_y+3, "●  Everyday Ingredients")
+        draw_ingredient_row(c, row_b_ids, sx, row_b_y, card_w, card_h, gap, cr, cg, cb)
+        for idx in range(n):
+            bx2 = sx + idx*(card_w+gap) + card_w/2
+            c.setFillColorRGB(cr,cg,cb); c.circle(bx2, badge_b_y+11, 11, fill=1, stroke=0)
+            c.setFillColorRGB(1,1,1); c.setFont("DV-Bold", 12)
+            c.drawCentredString(bx2, badge_b_y+6, str(idx+1))
 
     # Counting prompt
-    prompt_y = badge_c_y - 18
-    if prompt_y > 20:
-        c.setFillColorRGB(0.35,0.35,0.35); c.setFont("DV-Bold", 12)
+    prompt_y = badge_b_y - 24
+    if not is_legendary and prompt_y > 20:
+        c.setFillColorRGB(0.35,0.35,0.35); c.setFont("DV-Bold", 13)
         c.drawCentredString(w/2, prompt_y, "Count 5 ingredients in each row -- can you do it?  ★")
 
     # Footer
     c.setFillColorRGB(0.68,0.68,0.68); c.setFont("DV-Regular", 9)
-    c.drawCentredString(w/2, 12, f"#{dex_num:03d}  •  Pokémon Quest Cooking Book")
+    c.drawCentredString(w/2, 12, f"#{dex_num:03d}  •  Pokemon Quest Cooking Book")
 
     c.showPage()
 
@@ -857,30 +849,37 @@ def main():
         recipe_name = RECIPE_NAMES.get(db_key, "Special Recipe")
         combo_data = combos.get(db_key)
         if combo_data:
-            rainbow_ids, easy_ids, simple_ids = combo_data
+            best_ids, rns_ids, simple_ids = combo_data
         else:
-            rainbow_ids = easy_ids = simple_ids = [6,6,8,8,1]
+            best_ids = rns_ids = simple_ids = [6,6,8,8,1]
+
+        is_legendary = dex_num in LEGENDARY_DEX
+        # Row A: for legendary use full best (Mystical Shell allowed);
+        #        for everyone else use Rainbow + no Shell combo
+        row_a = best_ids if is_legendary else rns_ids
+        # Row B: always no Rainbow and no Shell (common ingredients)
+        #        for legendary this shows an alternative without special items
+        row_b = simple_ids
 
         img_path = download_pokemon_image(dex_num)
-        has_rainbow = 9 in rainbow_ids
-        has_shell_easy = 10 in easy_ids
-        print(f"  #{dex_num:3d} {display_name:15s} → {recipe_name:22s}  {'🌈' if has_rainbow else '  '}  {'🐚' if has_shell_easy else '  '}")
+        marker = "L" if is_legendary else ("R" if 9 in row_a else " ")
+        print(f"  #{dex_num:3d} {display_name:15s} → {recipe_name:22s}  [{marker}]")
 
         pokemon_list.append({
             "dex_num": dex_num, "display_name": display_name,
             "recipe_name": recipe_name,
-            "rainbow_ids": rainbow_ids, "easy_ids": easy_ids,
-            "simple_ids": simple_ids,
+            "row_a": row_a, "row_b": row_b,
+            "is_legendary": is_legendary,
             "img_path": str(img_path) if img_path else None,
         })
 
     print("\n[5/5] Building PDF …")
     c = pdfgen_canvas.Canvas("pokemon-cooking-book.pdf", pagesize=A4)
-    c.setTitle("Pokémon Quest Cooking Book")
+    c.setTitle("Pokemon Quest Cooking Book")
     make_title_page(c)
     for idx, p in enumerate(pokemon_list):
         make_card(c, p["display_name"], p["dex_num"], p["recipe_name"],
-                  p["rainbow_ids"], p["easy_ids"], p["simple_ids"],
+                  p["row_a"], p["row_b"], p["is_legendary"],
                   p["img_path"], idx)
     c.save()
 
