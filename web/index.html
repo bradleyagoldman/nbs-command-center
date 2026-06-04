@@ -359,7 +359,7 @@ function renderDetail(p) {
 }
 
 function showTOC() {
-  document.getElementById('toc-view').style.display = '';
+  document.getElementById('toc-view').style.display = 'block';
   document.getElementById('detail-view').style.display = 'none';
   document.getElementById('back-btn').classList.remove('show');
   document.querySelector('.top-title').textContent = 'Pokemon Cooking Book';
@@ -371,7 +371,7 @@ function showPokemon(id) {
   if (!p) { showTOC(); return; }
   const dv = document.getElementById('detail-view');
   dv.innerHTML = renderDetail(p);
-  dv.style.display = '';
+  dv.style.display = 'block';
   document.getElementById('toc-view').style.display = 'none';
   document.getElementById('back-btn').classList.add('show');
   document.querySelector('.top-title').textContent = p.name;
