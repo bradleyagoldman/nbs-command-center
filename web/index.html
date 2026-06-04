@@ -200,6 +200,7 @@ body {
 }
 .row-label.rainbow { background: #6A1B9A; }
 .row-label.everyday { background: #BF360C; }
+.row-label.everyday-alt { background: #4E342E; }
 .row-label.legendary-lbl { background: #B8860B; }
 
 .ing-row {
@@ -307,6 +308,25 @@ const ING = {
 const ING_BASE = "ingredients";
 const ART_BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork";
 
+const RECIPE_ROW_C = {
+  "Veggie Smoothie":        [2, 4, 4, 5, 5],
+  "Hot Pot":                [4, 4, 8, 8, 8],
+  "Blue Soda":              [3, 4, 4, 4, 4],
+  "Honey Nectar":           [3, 3, 6, 6, 6],
+  "Light-as-Air Casserole": [3, 3, 4, 4, 4],
+  "Watt a Risotto":         [4, 4, 6, 6, 6],
+  "Yellow Curry":           [1, 6, 6, 6, 6],
+  "Sludge Soup":            [1, 1, 8, 8, 8],
+  "Plain Crepe":            [6, 6, 8, 8, 8],
+  "Get Swole Syrup":        [6, 6, 8, 8, 8],
+  "Mouth-Watering Dip":     [3, 3, 3, 4, 4],
+  "Mud Pie":                [2, 2, 4, 4, 4],
+  "Brain Food":             [4, 4, 4, 6, 6],
+  "Gray Porridge":          [1, 8, 8, 8, 8],
+  "Stone Soup":             [4, 4, 5, 5, 5],
+  "Red Stew":               [2, 2, 2, 8, 8],
+};
+
 function ingUrl(id) { return `${ING_BASE}/${ING[id].slug}.png`; }
 function artUrl(dex) { return `${ART_BASE}/${dex}.png`; }
 
@@ -341,7 +361,12 @@ function renderDetail(p) {
        </div>`
     : ingRowHTML(p.row_b, '&#9679; Everyday Ingredients', 'everyday', p.color);
 
-  const prompt = (p.is_legendary || tooMuchRainbow) ? '' :
+  const rowC_ids = !p.is_legendary && RECIPE_ROW_C[p.recipe];
+  const rowC = rowC_ids
+    ? ingRowHTML(rowC_ids, '&#9679; Also Works!', 'everyday-alt', p.color)
+    : '';
+
+  const prompt = p.is_legendary ? '' :
     `<p class="count-prompt">Count 5 ingredients in each row &mdash; can you do it? &#9733;</p>`;
 
   return `
@@ -354,6 +379,7 @@ function renderDetail(p) {
     </div>
     ${rowA}
     ${rowB}
+    ${rowC}
     ${prompt}
     <p class="card-footer">#${String(p.dex).padStart(3,'0')} &bull; Pok&eacute;mon Quest Cooking Book</p>`;
 }
